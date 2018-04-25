@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Calendar</title>
+    <link rel="stylesheet" href="calendar.css">
+    <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/blitzer/jquery-ui.css"
+    type="text/css" rel="Stylesheet" />
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+</head>
+<body>
+    <section class="container">
+        <h2 id="hDate">date</h2>
+        <div id="logreg" class="ui">
+            <div id="welcome">
+
+            </div>
+            <br>
+            <br>
+            <div class="login">
+                <input type="text" id="username" placeholder="Username" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <br>
+                <br>
+                <button id="register_btn">Register</button>
+                <button id="login_btn">Login</button>
+            </div>
+
+            <div id="createEvent" title="Create Event">
+                <input type="text" id="title" required placeholder="Event title">
+                <input type="datetime-local" id="datetime" required>
+                <!-- <input type="date" id="date" required>
+                <input type="time" id="time" required> -->
+                <button id="createEvent_btn">Create</button>
+            </div>
+
+            <div id="editEvent" title="Edit Event">
+                <input type="text" id="title2" required>
+                <input type="datetime-local" id="datetime2" required>
+                <!-- <input type="date" id="date" required>
+                <input type="time" id="time" required> -->
+                <button id="editEvent_btn">Edit</button>
+            </div>
+
+            <div id="shareEvent" title="Share Event">
+                <p id="eventTitle"></p>
+                <input type="text" id="shareUser" required placeholder="enter username">
+                <!-- <input type="date" id="date" required>
+                <input type="time" id="time" required> -->
+                <button id="shareEvent_btn">Share</button>
+            </div>
+
+            <div id="event_btn" class="hidden">
+               <button>Create Event</button>
+            </div>
+            <br>
+
+            <div class="hidden">
+                <select id="event_dropdown">
+                </select>
+                <button id="edit">Edit</button>
+                <button id="delete">Delete</button>
+                <button id="flag">Flag</button>
+                <button id="share">Share</button>
+            </div>
+
+            <div id='eventOutlook' class="hidden">
+                <p id='nextMon'></p>
+                <p id='lastMon'></p>
+            </div>
+
+            <div id="logout_btn" class="hidden">
+                <button>Logout</button>
+            </div>
+            <br>
+        </div>
+        <div class="tab">
+        <table id="monthdays">
+        <thead>
+            <tr>
+                <th colspan="7" id="currentdate">Current Month</th>
+            </tr>
+            <tr id="daysoftheweek">
+                <th>Sunday</th>
+                <th>Monday</th>
+                <th>Tuesday</th>
+                <th>Wednesday</th>
+                <th>Thursday</th>
+                <th>Friday</th>
+                <th>Saturday</th>
+            </tr>
+        </thead>
+        <tbody id="daynumbers">
+            <tr>
+                <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            </tr>
+        </tbody>
+    </table>
+    </div>
+    </section>
+
+
+    <br>
+
+    <div id="nextprev">
+        <button type="button" id="prev_month_btn">Previous Month</button>
+        <button type="button" id="next_month_btn">Next Month</button>
+    </div>
+
+    <br><br>
+
+
+    <script src="calendar.js"></script>
+    <script>
+        var user; //keeps track of current user
+        var token; //keeps track of current token
+        var events = []; //keeps track of events of current user
+        var prevEvents = 0; //# of events in prev month
+        var nextEvents = 0; //# of events in next month
+
+        var d = new Date();
+        // var dd = d.getDate();
+        // var mm = d.getMonth()+1;
+        // d = mm + '/' + dd;
+        $("#hDate").html(d.toDateString());
+
+
+        $(document).ready(function() {
+            $("#welcome").css("color", "hsla(" + Math.floor(Math.random() * (360)) + ", 75%, 58%, 1)");
+        });
+
+        //Below are all the event listeners for the buttons we use
+        document.getElementById("login_btn").addEventListener("click", loginAjax, false);
+        document.getElementById("event_btn").addEventListener("click", showdialog, false);
+        document.getElementById("register_btn").addEventListener("click", registerAjax, false);
+        document.getElementById("createEvent_btn").addEventListener("click", createEventAjax, false);
+        document.getElementById("logout_btn").addEventListener("click", logoutAjax, false);
+        document.getElementById("next_month_btn").addEventListener("click", update, false);
+        document.getElementById("prev_month_btn").addEventListener("click", update, false);
+        document.getElementById("edit").addEventListener("click", editDialog, false);
+        document.getElementById("editEvent_btn").addEventListener("click", editAjax, false);
+        document.getElementById("share").addEventListener("click", shareDialog, false);
+        document.getElementById("shareEvent_btn").addEventListener("click", shareAjax, false);
+        document.getElementById("delete").addEventListener("click", deleteAjax, false);
+        document.getElementById("flag").addEventListener("click", flagAjax, false);
+        document.addEventListener("DOMContentLoaded", logoutAjax, false);
+
+        //update is called whenever a change is made and that needs to be reflected in what the user sees
+        function update(){
+            events = [];
+            prevEvents = 0;
+            nextEvents = 0;
+
+            var myNode = document.getElementById("event_dropdown");
+                while (myNode.firstChild) {
+                myNode.removeChild(myNode.firstChild);
+            }
+
+            getEvents();
+        }
+
+        //this function takes in an event and displays it on the calendar
+        function postEvent(e) {
+            var title = e.eventTitle;
+            var offset = 0;
+            var weeks = currentMonth.getWeeks();
+            var myDays = weeks[0].getDates();
+
+            for(var i = 0; i < 6; i++) {
+                var t = myDays[i].toISOString();
+                t = t.substr(8,2);
+                if(t == '01') {
+                    offset = i;
+                }
+            }
+
+            var year = e.year;
+            var month = parseInt(e.month) - 1;
+            var day = e.day;
+            var time = e.time;
+            var id = e.eventID;
+            var flag = e.flag;
+
+            const paragraph = document.createElement('p');
+            paragraph.textContent = title +" - "+ time;
+            paragraph.classList.add("userevent");
+
+            if(flag) {
+                paragraph.classList.add("importantevent");
+            }
+
+            var week = parseInt(day / 7);
+            day = day - week * 7;
+            var mynumbers = document.getElementById('daynumbers').childNodes;
+            var myweek = mynumbers[2 * week + 1].childNodes;
+
+            if(month[0] == 0) {
+                month = month.substr(1);
+            }
+
+            curyear = currentMonth.year;
+            curmonth = currentMonth.month;
+
+            boldtitle = document.createElement('strong');
+            boldtitle.appendChild(paragraph);
+
+            var dropdown = document.getElementById("event_dropdown"); //add to the dropdown list of events
+            var newItem = document.createElement("option");
+
+            if(year == curyear && month == currentMonth.nextMonth().month) {
+                nextEvents++;
+            }
+
+            if(year == curyear && month == currentMonth.prevMonth().month) {
+                prevEvents++;
+            }
+
+            if(year == curyear && month == curmonth) {
+                if(day + offset > 7) {
+                    var myweekX = mynumbers[2 * week + 3].childNodes;
+                    myweekX[day - offset + 1].appendChild(paragraph);
+                    newItem.value = id;
+                    newItem.text = title;
+                    dropdown.appendChild(newItem);
+                    //document.getElementById().classList.add("hasEvent");
+                }
+
+                else {
+                    myweek[day + offset].appendChild(paragraph);
+                    newItem.value = id;
+                    newItem.text = title;
+                    dropdown.appendChild(newItem);
+                }
+            }
+
+            document.getElementById('nextMon').innerHTML = "Events Next Month: " + nextEvents;
+            document.getElementById('lastMon').innerHTML = "Events Last Month: " + prevEvents;
+        }
+
+        //this function is called when the user logs out and the events of the user must be cleared from the display
+        function clearEvent(e) {
+            var title = e.eventTitle;
+            var offset = 0;
+
+            var weeks = currentMonth.getWeeks();
+            var myDays = weeks[0].getDates();
+
+            for(var i = 0; i < 6; i++) {
+                var t = myDays[i].toISOString();
+                t = t.substr(8,2);
+                if(t == '01') {
+                    offset = i;
+                }
+            }
+
+            var year = e.year;
+            var month = parseInt(e.month) - 1;
+            var day = e.day;
+            var time = e.time;
+            var id = e.eventID;
+
+            const paragraph = document.createElement('p');
+            paragraph.textContent = title + time;
+            paragraph.classList.add("userevent");
+
+            var week = parseInt(day / 7);
+            day = day - week * 7;
+
+            var mynumbers = document.getElementById('daynumbers').childNodes;
+
+            var myweek = mynumbers[2 * week + 1].childNodes;
+
+            if(month[0] == 0) {
+                month = month.substr(1);
+            }
+
+            curyear = currentMonth.year;
+            curmonth = currentMonth.month;
+
+            console.log(curyear, curmonth);
+            console.log(year, month);
+
+            boldtitle = document.createElement('strong');
+            boldtitle.removeChild(paragraph);
+
+            if(year == curyear && month == curmonth) {
+                if(day + offset > 7) {
+                    var myweekX = mynumbers[2 * week + 3].childNodes;
+                    myweekX[day - offset + 1].removeChild(paragraph);
+                }
+
+                else {
+                    myweek[day + offset].removeChild(paragraph);
+                }
+            }
+        }
+
+        function loginAjax(event){
+           var username = document.getElementById("username").value; // Get the username from the form
+           var password = document.getElementById("password").value; // Get the password from the form
+            // Make a URL-encoded string for passing POST data:
+            var dataString = "username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password);
+            var xmlHttp = new XMLHttpRequest(); // Initialize our XMLHttpRequest instance
+            xmlHttp.open("POST", "login.php", true); // Starting a POST request (NEVER send passwords as GET variables!!!)
+            xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xmlHttp.addEventListener("load", login, false);
+            xmlHttp.send(dataString);
+        }
+
+        //if a user is logged in succesfully this function will get their events and store there data in the session
+        function login(event){
+            var jsonData = JSON.parse(event.target.responseText); // parse the JSON into a JavaScript object
+            if(jsonData.success){
+                loggedInUI();
+                getEvents();
+                user = jsonData.username;
+                token = jsonData.token;
+                $("#welcome").html(user+"'s Calendar");
+            }else{
+                alert("You were not logged in.  "+jsonData.message);
+            }
+        }
+
+        //xml request to delete and event
+        function deleteAjax(){
+            var e = document.getElementById("event_dropdown");
+            var opt = e.options[e.selectedIndex].value;
+            var dataString = "opt=" + encodeURIComponent(opt);
+            var xmlHttp = new XMLHttpRequest(); // Initialize our XMLHttpRequest instance
+            xmlHttp.open("POST", "delete.php", true); // Starting a POST
+            xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            $(".userevent").empty();
+            xmlHttp.addEventListener("load", update, false);
+            xmlHttp.send(dataString);
+        }
+
+        //xml request to edit an event
+        function editAjax(){
+            $("#editEvent").dialog('close');
+            var e = document.getElementById("event_dropdown");
+            var opt = e.options[e.selectedIndex].value;
+            var title = document.getElementById("title2").value;
+            var datetime = document.getElementById("datetime2").value;
+
+            var dataString = "opt=" + encodeURIComponent(opt) + "&title=" + encodeURIComponent(title) + "&datetime=" + encodeURIComponent(datetime);
+            var editXmlHttp = new XMLHttpRequest();
+            editXmlHttp.open("POST", "edit.php", true);
+            editXmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            editXmlHttp.addEventListener("load", function(event){
+                var editjsonData = JSON.parse(event.target.responseText);
+                if(editjsonData.success){
+                    //alert("Event Created!");
+                    $(".userevent").empty();
+                    update();
+                }else{
+                    alert("Failed to edit event"+editjsonData.message);
+                }
+            }, false);
+            editXmlHttp.send(dataString);
+        }
+
+        //this function allows users to share their event with others
+        //if one user deletes the event, it will be kept for the other user
+        function shareAjax(){
+            $("#shareEvent").dialog('close');
+            var e = document.getElementById("event_dropdown");
+            var opt = e.options[e.selectedIndex].value;
+            var shareUser = document.getElementById("shareUser").value;
+            console.log(shareUser, opt);
+            var dataString = "opt=" + encodeURIComponent(opt) + "&shareUser=" + encodeURIComponent(shareUser);
+            var xmlHttp = new XMLHttpRequest(); // Initialize our XMLHttpRequest instance
+            xmlHttp.open("POST", "share.php", true); // Starting a POST
+            xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            $(".userevent").empty();
+            xmlHttp.addEventListener("load", update, false);
+            xmlHttp.send(dataString);
+        }
+
+        //this function allows the user to flag events as important and bold them in red
+        function flagAjax(){
+            var e = document.getElementById("event_dropdown");
+            var opt = e.options[e.selectedIndex].value;
+            var dataString = "opt=" + encodeURIComponent(opt);
+            var editXmlHttp = new XMLHttpRequest();
+            editXmlHttp.open("POST", "flag.php", true);
+            editXmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            editXmlHttp.addEventListener("load", function(event){
+                var editjsonData = JSON.parse(event.target.responseText);
+                if(editjsonData.success){
+                    $(".userevent").empty();
+                    update();
+                }else{
+                    alert("Failed to edit event"+editjsonData.message);
+                }
+            }, false);
+            editXmlHttp.send(dataString);
+        }
+
+        //xml request for logout
+        function logoutAjax(){
+            var xmlHttp = new XMLHttpRequest(); // Initialize our XMLHttpRequest instance
+            xmlHttp.open("POST", "logout.php", true); // Starting a POST
+            xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xmlHttp.addEventListener("load", logout, false);
+            xmlHttp.send("test");
+        }
+
+        //if logout is succesful certain elemets will be hidden and variables reset
+        function logout(event){
+            var logoutData = JSON.parse(event.target.responseText);
+            if(logoutData.success){
+                update();
+                alert("You have been logged out");
+                token = logoutData.token;
+                loggedOutUI();
+                $(".userevent").empty();
+                events = [];
+            }
+        }
+
+        //gets the events of a user
+        function getEvents(){
+            var dataString = "token=" + encodeURIComponent(token);
+            var eventXmlHttp = new XMLHttpRequest(); // Initialize our XMLHttpRequest instance
+            eventXmlHttp.open("POST", "getEvents.php", true);
+            eventXmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            eventXmlHttp.addEventListener("load", function(event){
+                events = JSON.parse(event.target.responseText);
+                if(events[0].success){
+                    for(i = 1; i < events.length; i++){
+                        postEvent(events[i]);
+                    }
+                }
+                else{
+                    alert("Failed to retreive events");
+                }
+            }, false);
+            eventXmlHttp.send(dataString); // Send the data
+        }
+
+        //ajax function used to register users. passwords send over post request
+        function registerAjax(event){
+            var username = document.getElementById("username").value; // Get the username from the form
+            var password = document.getElementById("password").value; // Get the password from the form
+
+            // Make a URL-encoded string for passing POST data:
+            var dataString = "username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password);
+
+            var regXmlHttp = new XMLHttpRequest(); // Initialize our XMLHttpRequest instance
+            regXmlHttp.open("POST", "register.php", true); // Starting a POST request (NEVER send passwords as GET variables!!!)
+            regXmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"); // It's easy to forget this line for POST requests
+            regXmlHttp.addEventListener("load", function(event){
+                var regjsonData = JSON.parse(event.target.responseText);
+                if(regjsonData.success){
+                    alert("Registration Successful!");
+                }else{
+                    alert("Registration Failed :("+regjsonData.message);
+                }
+            }, false); // Bind the callback to the load event
+            regXmlHttp.send(dataString); // Send the data
+        }
+
+        //when called on all UI that should be show when logged in pops up
+        function loggedInUI(){
+            $("#event_btn").show();
+            $("#logout_btn").show();
+            $(".login").hide();
+            $("#welcome").show();
+            $(".hidden").show();
+        }
+
+        //when call on all UI that should be show when logged out is show
+        function loggedOutUI(){
+            $("#event_btn").hide();
+            $("#logout_btn").hide();
+            $(".login").show();
+            $("#welcome").hide();
+            $(".hidden").hide();
+        }
+
+        function showdialog(){
+            $("#createEvent").dialog({closeText: ""});
+        }
+
+        function editDialog(){
+            var e = document.getElementById("event_dropdown");
+            var opt = e.options[e.selectedIndex].text;
+            document.getElementById("title2").value = opt;
+            $("#editEvent").dialog({closeText: ""});
+            //document.getElementById("datetime2").value = "My value";
+        }
+
+        function shareDialog(){
+            var e = document.getElementById("event_dropdown");
+            var opt = e.options[e.selectedIndex].text;
+            //document.getElementById("eventTitle").value = opt;
+            $("#eventTitle").html("Selected Event: "+opt);
+            $("#shareEvent").dialog({closeText: ""});
+        }
+
+        function hidedialog(){
+            $("#createEvent").dialog('close');
+        }
+
+        //this function allows users to create their own events
+        function createEventAjax(){
+            hidedialog();
+            var title = document.getElementById("title").value;
+            var datetime = document.getElementById("datetime").value;
+            var username = user;
+
+            var dataString = "title=" + encodeURIComponent(title) + "&datetime=" + encodeURIComponent(datetime) + "&username=" + encodeURIComponent(username);
+            var createXmlHttp = new XMLHttpRequest();
+            createXmlHttp.open("POST", "createEvent.php", true);
+            createXmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            createXmlHttp.addEventListener("load", function(event){
+                var createjsonData = JSON.parse(event.target.responseText);
+                if(createjsonData.success){
+                    $(".userevent").empty();
+                    update();
+                }else{
+                    alert("Failed to create event"+createjsonData.message);
+                }
+            }, false);
+            createXmlHttp.send(dataString);
+        }
+    </script>
+</body>
+</html>

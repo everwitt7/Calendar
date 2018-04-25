@@ -1,0 +1,112 @@
+@import url("http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,300italic,400,400italic");
+
+
+body {
+    background-color: white;
+    font-family: "Source Sans Pro", Helvetica, sans-serif;
+    color: #555;
+}
+
+.tab {
+    /*position: absolute;*/
+    margin-left: 30%;
+    table-layout: fixed;
+    /*width: 70%;*/
+    /*height: 80%;*/
+    /*border: 1px 1px 1px 1px;*/
+    /*margin-right:auto;*/
+
+}
+
+#welcome {
+    font-size: 200%;
+}
+
+#hDate {
+    text-align: center;
+}
+
+td {
+    width: 1%;
+    height: 80px;
+    vertical-align: top;
+} 
+
+.ui {
+    width: 30%;
+    /*height: 80%;*/
+    float: left;
+}
+
+.container {
+    width: 100%;
+    height: 80%;
+    margin: auto;
+    padding: 10px;
+}
+
+#daysoftheweek {
+    color: #db4437;
+}
+
+#monthdays {
+    background-color: white;
+}
+
+#nextprev {
+    position: absolute;
+    left: 60%;
+    width: 70%;
+}
+
+#logreg {
+    /*position: relative;
+    left: 30%;*/
+}
+
+/* need to do css border and make date span the all columns */
+#currentdate {
+    column-span: all;
+    font-size: larger;
+}
+
+button {
+    background: #4285f4;
+    color: #fff;
+    border-radius: 12px;
+    padding: 5px 10px;
+}
+
+#createEvent { 
+    display:none;
+
+}
+
+#editEvent { 
+    display:none;
+
+}
+
+table, td, th { 
+    border: 1px solid gray; 
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+#shareEvent {
+    display: none;
+}
+
+.userevent {
+    font-size: smaller;
+    color: #99ba78;
+}
+
+.importantevent {
+    color: red;
+    font-weight: bold;
+}
+
+.hidden { 
+    display:none; 
+}
